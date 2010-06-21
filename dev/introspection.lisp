@@ -1,37 +1,37 @@
 (in-package #:lift)
 
 (defgeneric find-testsuite (suite &key errorp)
-  (:documentation "Search for a testsuite named `suite`. 
+  (:documentation "Search for a testsuite named `suite`.
 
-The search is conducted across all packages so `suite` can be 
-a symbol in any package. I.e., find-testsuite looks for testsuite 
-classes whose symbol-name is string= to `suite`. If `errorp` is 
+The search is conducted across all packages so `suite` can be
+a symbol in any package. I.e., find-testsuite looks for testsuite
+classes whose symbol-name is string= to `suite`. If `errorp` is
 true, then find-testsuite can raise two possible errors:
 
- * If more than one matching testsuite is found, 
-then an error of type `testsuite-ambiguous` will be raised. 
- * If no matching testsuites are found, then an error of type 
-`testsuite-not-defined` will be raised. 
+ * If more than one matching testsuite is found,
+then an error of type `testsuite-ambiguous` will be raised.
+ * If no matching testsuites are found, then an error of type
+`testsuite-not-defined` will be raised.
 
 The default for `errorp` is nil."))
 
 (defgeneric find-test-case (suite name &key errorp)
-  (:documentation "Search for a test-case named `name` in a 
-testsuite named `suite`. 
+  (:documentation "Search for a test-case named `name` in a
+testsuite named `suite`.
 
-The search is conducted across all packages so `suite` and `name` 
+The search is conducted across all packages so `suite` and `name`
 can be symbols in any package. I.e., find-test-case looks for a
 testsuites and test-cases whose symbol-names are string= to
-`suite` and `name`. If `errorp` is 
+`suite` and `name`. If `errorp` is
 true, then find-test-case can raise two possible errors:
 
- * If more than one matching test-case is found, 
-then an error of type `test-case-ambiguous` will be raised. 
- * If no matching test-cases are found, then an error of type 
-`test-case-not-defined` will be raised. 
+ * If more than one matching test-case is found,
+then an error of type `test-case-ambiguous` will be raised.
+ * If no matching test-cases are found, then an error of type
+`test-case-not-defined` will be raised.
 
 The default for `errorp` is nil. If `suite` is nil, then
-find-test-case will search for matching test-cases across 
+find-test-case will search for matching test-cases across
 all suites. This is equivalent to the behavior of [find-test-cases][]."))
 
 (defgeneric find-test-cases (name &key errorp)
@@ -77,7 +77,7 @@ all suites. This is equivalent to the behavior of [find-test-cases][]."))
 	 (add-if-match suite-name)
 	 (when include-cases?
 	   (loop for method-name in (testsuite-tests suite-name) do
-		(add-if-match 
+		(add-if-match
 		 method-name (cons suite-name method-name)))))
        start-at))
     (sort result #'string-lessp :key (lambda (it)
@@ -115,8 +115,8 @@ a testsuite name and the `level` of the suite in the class hierarchy."
 
 `fn` should be a function of three arguments. It will called with
 a testsuite name, a test-case name and the `level` of the suite
-in the class hierarchy."  
-  (map-testsuites 
+in the class hierarchy."
+  (map-testsuites
    (lambda (suite-name level)
      ;; this suite / suite-name thing is messy
      (loop for method-name in (testsuite-tests suite-name) do
@@ -146,13 +146,13 @@ control over where in the test hierarchy the search begins."
     (nreverse result)))
 
 (defun print-tests (&key (include-cases? t) (start-at 'test-mixin) (stream t))
-  "Prints all of the defined test classes from :start-at on down." 
+  "Prints all of the defined test classes from :start-at on down."
   (map-testsuites
    (lambda (suite level)
      (let ((indent (coerce (make-list (* level 3) :initial-element #\Space)
 			   'string))
 	   (name (class-name suite)))
-       (format stream "~&~a~s (~:d)" 
+       (format stream "~&~a~s (~:d)"
 	       indent
 	       name
 	       (length (testsuite-methods name)))
@@ -163,10 +163,10 @@ control over where in the test hierarchy the search begins."
 
 ;; deprecate
 (defun list-tests (&key (include-cases? t) (start-at 'test-mixin) (stream t))
-  "Lists all of the defined test classes from :start-at on down." 
+  "Lists all of the defined test classes from :start-at on down."
   (mapc (lambda (subclass)
 	  (let ((subclass-name (class-name subclass)))
-	    (format stream "~&~s (~:d)" 
+	    (format stream "~&~s (~:d)"
 		    subclass-name
 		    (length (testsuite-methods subclass-name)))
 	    (when include-cases?
@@ -184,8 +184,8 @@ control over where in the test hierarchy the search begins."
     result))
 
 (defun testsuite-test-count (testsuite)
-  (or (and *testsuite-test-count* 
-           (prog1 *testsuite-test-count* (incf *testsuite-test-count*))) 
+  (or (and *testsuite-test-count*
+           (prog1 *testsuite-test-count* (incf *testsuite-test-count*)))
       (length (testsuite-methods testsuite))))
 
 (defmethod find-testsuite ((suite test-mixin) &key (errorp nil))
@@ -198,34 +198,34 @@ control over where in the test hierarchy the search begins."
 
 (defmethod find-testsuite ((suite-name string) &key (errorp nil))
   (let* ((temp nil)
-	 (possibilities (remove-duplicates 
-			 (loop for p in (list-all-packages) 
+	 (possibilities (remove-duplicates
+			 (loop for p in (list-all-packages)
 			    when (and (setf temp (find-symbol suite-name p))
 				      (find-class temp nil)
 				      (subtypep temp 'test-mixin)) collect
 			    temp))))
-    (cond ((null possibilities) 
+    (cond ((null possibilities)
 	   (when errorp
 	     (error 'testsuite-not-defined :testsuite-name suite-name)))
 	  ((= (length possibilities) 1)
 	   (first possibilities))
-	  (t 
+	  (t
 	   (if errorp
 	     (error 'testsuite-ambiguous
-		    :testsuite-name suite-name 
+		    :testsuite-name suite-name
 		    :possible-matches possibilities))
 	   possibilities))))
-	
+
 (defun test-case-p (suite-class name)
   (gethash name (test-name->methods (class-name suite-class))))
 
 #+(or)
 ;; old
 (defun test-case-p (suite-class name)
-  (find-method #'lift-test nil `(,suite-class (eql ,name)) nil)) 
+  (find-method #'lift-test nil `(,suite-class (eql ,name)) nil))
 
 #+(or)
-(test-case-p 
+(test-case-p
  (find-class (find-testsuite 'test-cluster-indexing-locally) nil)
  'db.agraph.tests::index-them)
 
@@ -234,11 +234,11 @@ control over where in the test hierarchy the search begins."
 		'index-themxx)
 
 (defmethod find-test-case ((suite symbol) name &key (errorp nil))
-  (find-test-case 
-   (find-class (find-testsuite suite :errorp errorp)) name :errorp errorp)) 
+  (find-test-case
+   (find-class (find-testsuite suite :errorp errorp)) name :errorp errorp))
 
 (defmethod find-test-case ((suite null) name &key (errorp nil))
-  (find-test-cases name :errorp errorp)) 
+  (find-test-cases name :errorp errorp))
 
 (defmethod find-test-case ((suite test-mixin) name &key (errorp nil))
   (find-test-case (class-of suite) name :errorp errorp))
@@ -255,24 +255,24 @@ control over where in the test hierarchy the search begins."
 (defmethod find-test-case ((suite-class standard-class) (name string)
 			    &key (errorp nil))
   (let* ((temp nil)
-	 (possibilities (remove-duplicates 
-			 (loop for p in (list-all-packages) 
+	 (possibilities (remove-duplicates
+			 (loop for p in (list-all-packages)
 			    when (and (setf temp (find-symbol name p))
 				      (test-case-p suite-class temp)) collect
 			    temp))))
-    (cond ((null possibilities) 
+    (cond ((null possibilities)
 	   (when errorp
-	     (error 'test-case-not-defined 
+	     (error 'test-case-not-defined
 		    :testsuite-name suite-class :test-case-name name)))
 	  ((= (length possibilities) 1)
 	   (first possibilities))
-	  (t 
+	  (t
 	   (when errorp
 	     (error 'test-case-ambiguous
 		    :testsuite-name suite-class
 		    :test-case-name name
 		    :possible-matches possibilities))))))
-			     
+
 (defmethod find-test-cases ((name symbol) &key (errorp nil))
   (find-test-cases (symbol-name name) :errorp errorp))
 
@@ -281,7 +281,7 @@ control over where in the test hierarchy the search begins."
     (dolist (testsuite (testsuites))
       (let* ((suitename (class-name testsuite))
 	     (testname (find-symbol name (symbol-package suitename))))
-	(when (and testname 
+	(when (and testname
 		   (test-case-p testsuite testname))
 	  (push (cons suitename testname) result))))
     (unless result
@@ -314,7 +314,7 @@ control over where in the test hierarchy the search begins."
 			   (and (eq (first datum) suite-name)
 				(eq (second datum) name)))
 			 (tests-run result))))))
-  
+
 (defun suite-tested-p (suite &key (result *test-result*))
   (let ((suite (find-testsuite suite)))
     (and result
@@ -333,32 +333,32 @@ control over where in the test hierarchy the search begins."
     (flet ((gather (list kind process?)
             (when list
               (push (cons
-                     kind 
+                     kind
                      (if process?
                          (loop for item in list collect
                               (list (testsuite item)
                                     (test-method item) item))
                          list)) acc))))
-      (when errors? 
+      (when errors?
        (gather (errors result) :errors t))
-      (when failures? 
+      (when failures?
        (gather (testsuite-failures result) :failures t))
-      (when expected-errors? 
+      (when expected-errors?
        (gather (expected-errors result) :expected-errors t))
-      (when expected-failures? 
+      (when expected-failures?
        (gather (expected-failures result) :expected-failures t))
       (when skipped-testsuites?
        (gather (skipped-testsuites result) :skipped-testsuites t))
       (when skipped-test-cases?
        (gather (skipped-test-cases result) :skipped-test-cases t))
       (when successes?
-       (gather (loop for (suite test-case data) in (tests-run result) 
+       (gather (loop for (suite test-case data) in (tests-run result)
                     unless (getf data :problem) collect (list suite test-case))
                :successes nil))
       (nreverse acc))))
 
 (defun test-successes (&key (result *test-result*))
-  (cdr (first (test-results :result result 
+  (cdr (first (test-results :result result
                            :successes? t
                            :errors? nil :expected-errors? nil
                            :failures? nil :expected-failures? nil))))
@@ -382,7 +382,7 @@ control over where in the test hierarchy the search begins."
 ;; expensive, don't keep calling `massage-condition-string`
 (defun build-issues-list (result kind)
   (let* ((args (list :failures? nil :errors? nil :expected-failures? nil
-		     :expected-errors? nil :skipped-testsuites? nil 
+		     :expected-errors? nil :skipped-testsuites? nil
 		     :skipped-test-cases? nil)))
     (ecase kind
       (:errors (setf (getf args :errors?) t))
@@ -393,7 +393,7 @@ control over where in the test hierarchy the search begins."
       (:skipped-test-cases (setf (getf args :skipped-test-cases?) t)))
     (let ((tests (mapcar (lambda (triple)
 			   (list* (massage-condition-string triple) triple))
-			 (rest (first (apply #'test-results 
+			 (rest (first (apply #'test-results
 					     :result result args)))))
 	  (result nil)
 	  (sub-result nil)
@@ -401,7 +401,7 @@ control over where in the test hierarchy the search begins."
       (flet ((grab (sub-result)
 	       (when sub-result
 		 (push (cons last-string sub-result) result))))
-	(loop for datum in 
+	(loop for datum in
 	     (sort tests 'string-lessp :key 'first) do
 	     (destructuring-bind (string _0 _1 _2)
 		 datum
@@ -451,16 +451,16 @@ control over where in the test hierarchy the search begins."
 	     (add-group suite))
 	   (pop rest)
 	   (push (cons suite name) sub-result))
-      (add-group sub-result nil))))
+      (add-group sub-result))))
 
 #|
-(divide-cases 
+(divide-cases
  '((1 . a) (1 . b) (1 . c) (2 . a) (2 . b) (3 . a) (3 . b) (3 . c) (3 .d)))
 
-(divide-cases 
+(divide-cases
  '((1 . a) (1 . b) (1 . c) (2 . a) (2 . b) (3 . a) (3 . b) (3 . c)))
 
-(divide-cases 
+(divide-cases
  '((1 . a) (1 . b) (1 . c) (2 . a) (2 . b) (3 . a) (3 . b) (3 . c) (3 . d) (3 . e)))
 |#
 
@@ -481,6 +481,6 @@ control over where in the test hierarchy the search begins."
 
 #+(or)
 (lift:run-tests
- :suite (lift::suites-in-portion 
+ :suite (lift::suites-in-portion
 	 (lift::collect-test-cases 'db.agraph.tests)
 	 '(:b)))
