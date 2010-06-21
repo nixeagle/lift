@@ -1098,7 +1098,7 @@ these cancel testing instead.)")
    (when (probe-file log-file)
      (delete-file log-file))))
 
-(deftestsuite test-log-file-helper ()
+(deftestsuite test-log-file-helper (lift-test)
   (log-file))
 
 (addtest (test-log-file-helper)
